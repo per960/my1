@@ -1,0 +1,143 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Local‑Time Video Scheduler</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- jQuery – you can also use a local copy if you prefer -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+</head>
+<body>
+    <h1>Today's Video Schedule</h1>
+
+    <div id="player-container">
+        <!-- The iframe will be inserted here -->
+        <iframe id="video-player"
+                width="800"
+                height="450"
+                src=""
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen>
+        </iframe>
+    </div>
+
+    <div id="info">
+        <p id="now"></p>
+        <p id="current-title"></p>
+        <p id="next-title"></p>
+    </div>
+
+    <!-- Optional playlist navigation -->
+    <div id="playlist-controls">
+        <button id="prev">← Previous</button>
+        <button id="next">Next →</button>
+    </div>
+
+    <script>
+        // -----------------------------------------------------------------
+        // CONFIGURATION
+        // -----------------------------------------------------------------
+        const SCHEDULE_URL = "schedule.json";   // where the JSON lives
+        const REFRESH_MS   = 30 * 1000;          // refresh every 30 seconds
+
+        // -----------------------------------------------------------------
+        // GLOBAL STATE
+        // -----------------------------------------------------------------
+        let schedule = null;    // will hold the parsed JSON
+        let currentIdx = -1;    // index of the video that is currently playing
+
+        // -----------------------------------------------------------------
+        // UTILITY: format a Date nicely
+        // -----------------------------------------------------------------
+        function formatDate(d) {
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // -----------------------------------------------------------------
+        // MAIN LOGIC: pick the correct video for “now”
+        // -----------------------------------------------------------------
+        function updatePlayer() {
+            const now = new Date();
+            $('#now').text(`Local time: ${now.toLocaleString()}`);
+
+            if (!schedule) {
+                $('#current-title').text('Loading schedule...');
+                return;
+            }
+
+            // 1️⃣ Find the entry whose time window contains “now”
+            const idx = schedule.playlist.findIndex(item => {
+                const start = new Date(item.start);
+                const end   = new Date(item.end);
+                return now >= start && now < end;
+            });
+
+            // 2️⃣ If we have a match, load it
+            if (idx !== -1) {
+                if (idx !== currentIdx) {
+                    // a new video needs to be loaded
+                    const entry = schedule.playlist[idx];
+                    $('#video-player').attr('src', entry.url);
+                    $('#current-title').html(`Now playing: <strong>${entry.title}</strong>`);
+                    currentIdx = idx;
+                }
+            } else {
+                // No video for right now → clear iframe & show “nothing”
+                $('#video-player').attr('src', '');
+                $('#current-title').text('No video scheduled at this time.');
+                currentIdx = -1;
+            }
+
+            // 3️⃣ Show info about the *next* upcoming video (if any)
+            const future = schedule.playlist.filter(item => new Date(item.start) > now);
+            if (future.length > 0) {
+                const next = future[0];
+                const start = formatDate(new Date(next.start));
+                $('#next-title').html(`Next up at ${start}: <strong>${next.title}</strong>`);
+            } else {
+                $('#next-title').text('No more videos today.');
+            }
+        }
+
+        // -----------------------------------------------------------------
+        // PLAYLIST NAVIGATION (optional)
+        // -----------------------------------------------------------------
+        function jumpTo(idx) {
+            if (idx < 0 || idx >= schedule.playlist.length) return;
+            const entry = schedule.playlist[idx];
+            $('#video-player').attr('src', entry.url);
+            $('#current-title').html(`Now playing (manual): <strong>${entry.title}</strong>`);
+            currentIdx = idx;
+        }
+
+        $('#prev').on('click', () => {
+            if (schedule && currentIdx > 0) jumpTo(currentIdx - 1);
+        });
+        $('#next').on('click', () => {
+            if (schedule && currentIdx < schedule.playlist.length - 1) jumpTo(currentIdx + 1);
+        });
+
+        // -----------------------------------------------------------------
+        // INITIAL LOAD
+        // -----------------------------------------------------------------
+        $(function () {
+            // 1️⃣ Pull the JSON – note: you must serve the page via HTTP(S),
+            //    otherwise browsers block the XHR request for a file:// URL.
+            $.getJSON(SCHEDULE_URL)
+                .done(data => {
+                    schedule = data;
+                    updatePlayer();          // initial run
+                })
+                .fail((jqxhr, status, err) => {
+                    console.error("Error loading schedule:", status, err);
+                    $('#current-title').text('Failed to load schedule.');
+                });
+
+            // 2️⃣ Refresh every REFRESH_MS ms (checks if we crossed a time‑boundary)
+            setInterval(updatePlayer, REFRESH_MS);
+        });
+    </script>
+</body>
+</html>
