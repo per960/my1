@@ -1,0 +1,27 @@
+
+[
+  {
+    "title": "Morning news",
+    "start": "08:00",               // 24‑h local time, HH:MM
+    "end":   "09:30",
+    "url":   "https://www.youtube.com/embed/5qap5aO4i9A?autoplay=1&mute=1"
+  },
+  {
+    "title": "Daily tutorial",
+    "start": "09:30",
+    "end":   "11:00",
+    "url":   "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1"
+  },
+  {
+    "title": "Lunch break music",
+    "start": "12:00",
+    "end":   "13:00",
+    "url":   "https://www.youtube.com/embed/6Dh-RL__uN4?autoplay=1&mute=1"
+  },
+  {
+    "title": "Afternoon webinar",
+    "start": "14:00",
+    "end":   "15:30",
+    "url":   "https://www.youtube.com/embed/3JZ_D3ELwOQ?autoplay=1&mute=1"
+  }
+]
