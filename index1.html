@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>USB Device Info</title>
+</head>
+<body>
+    <button id="connect">Connect USB Device</button>
+    <div id="usb-info"></div>
+
+    <script>
+    
+document.getElementById('connect').addEventListener('click', async () => {
+        try {
+            // Request USB device
+            const device = await navigator.usb.requestDevice({ filters: [] });
+            
+            // Get device information
+            const usbInfo = {
+                vendorId: device.vendorId,
+                productId: device.productId,
+productName: device.productName,
+                manufacturerName: device.manufacturerName,
+                serialNumber: device.serialNumber
+            };
+            
+            // Send to PHP server
+            fetch('usb_info_handler.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+},
+                body: JSON.stringify(usbInfo)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('usb-info').innerHTML = 
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            });
+} catch (error) {
+            console.error('USB Error:', error);
+            document.getElementById('usb-info').innerHTML = 
+                '<p>Error: ' + error.message + '</p>';
+        }
+    });
+    </script>
+</body>
+</html>
